@@ -10,9 +10,9 @@ Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 decode_results results;  //kod odebrany przez czujnik
 int godziny = 12;        // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
-int sekundy=15;
-int dlugoscTablicyGodzin=8;
- int tablicaGodzin[] = { 13, 14, 22, 23, 01, 02, 03, 04 };
+int sekundy = 15;
+int tablicaGodzin[] = { 13, 14, 22, 23,00, 01, 02, 03 };
+int dlugoscTablicyGodzin = sizeof(tablicaGodzin) / sizeof(int);
 
 boolean kontrolkaWlaczonegoWentylatora = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu wentylatora
 
@@ -57,7 +57,7 @@ void loop() {
   rtc.getDateTime(&now);
   godziny = now.hour;
   minuty = now.minute;
-  //sekundy = now.second;
+  sekundy = now.second;
 
 
   sprawdz();
@@ -68,25 +68,31 @@ void loop() {
 
   if (digitalRead(A1) == LOW)  //przycisk uruchamia wentylator na interwaCzasulWlaczeniaWentylatora minut
   {
-    kliknij();
+    uruchomBojlej();
   }
   if (irrecv.decode(&results))  // sprawdza, czy otrzymano sygnał IR
   {
     if (results.value == 551486205) {  ////////////////////////////////// Tu mnusze podmienic wartosc ktora odczytam z pilota
       Serial.println("oooooo mam sygnal");
-      kliknij();
+      uruchomBojlej();
     }
     Serial.print(results.value);
     Serial.println(" ");
     irrecv.resume();  // odbiera następną wartość
-    delay(100);
+    delay(5000);
   }
+  delay(5000);
 }
 
 
-void kliknij() {
+void uruchomBojlej() {
 
-  kontrolkaWlaczonegoWentylatora = true;
+  digitalWrite(2, true);  // uruchamiamy pin D2
+}
+
+void wylaczBojlej() {
+
+  digitalWrite(2, false);  // wyłączamy pin D2
 }
 
 
@@ -96,7 +102,7 @@ void wyswietl() {
   if (kontrolkaWlaczonegoWentylatora == true)  // tu sprawdzam ktora wersje wyswietlic
   {
     lcd.print("Wentyla ON ");
-   
+
   } else if (kontrolkaWlaczonegoWentylatora == false) {
     lcd.print("Wentylator OFF   ");
   }
@@ -120,15 +126,20 @@ void wyswietl() {
 
 void sprawdz() {
 
- 
-  if (kontrolkaWlaczonegoWentylatora == true)  // kontrolka zmiana stanu na wylaczony
 
-    for (int i = 0; i < sizeof(tablicaGodzin); i++) {
-      if (godziny == tablicaGodzin[i]) {
-        Serial.println("godziny sa takie same");
-        kontrolkaWlaczonegoWentylatora = true;
-        Serial.println("klik ");
-        kliknij();
-      } else kontrolkaWlaczonegoWentylatora = false;
+  //if (kontrolkaWlaczonegoWentylatora == true)  // kontrolka zmiana stanu na wylaczony
+
+  for (int i = 0; i < dlugoscTablicyGodzin; i++) {
+    if (godziny == tablicaGodzin[i]) {
+      Serial.println("godziny sa takie same");
+      kontrolkaWlaczonegoWentylatora = true;
+      Serial.println("klik ");
+      uruchomBojlej();
+    } else {
+      kontrolkaWlaczonegoWentylatora = false;
+      Serial.println("Wyyylaczoneeee");
+
+      wylaczBojlej();
     }
+  }
 }
