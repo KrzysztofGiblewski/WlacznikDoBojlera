@@ -32,10 +32,10 @@ void setup() {
     Ds1302::DateTime dt = {
       .year = 23,
       .month = Ds1302::MONTH_NOV,
-      .day = 2,
-      .hour = 18,
-      .minute = 18,
-      .second = 30,
+      .day = 15,
+      .hour = 21,
+      .minute = 24,
+      .second = 01,
       .dow = Ds1302::DOW_TUE
     };
 
@@ -49,7 +49,8 @@ void loop() {
   godziny = now.hour;
   minuty = now.minute;
   sekundy = now.second;
-  dzien = now.day;
+  dzien = now.dow;
+
 
   wyswietl();
   sprawdz();
@@ -68,10 +69,10 @@ void wyswietl() {
   lcd.setCursor(0, 0);
   if (kontrolkaWlaczeniaBojlera == true)  // tu sprawdzam ktora wersje wyswietlic
   {
-    lcd.print("Bojler wlaczony ");
+    lcd.print("ON Bojler wlaczony ON ...");
 
   } else if (kontrolkaWlaczeniaBojlera == false) {
-    lcd.print("Bojler OFF.. ");
+    lcd.print("Bojler OFF");
   }
   Serial.println(godziny + " " + minuty);
   //////////////    tu wyswietlam bierzaca godzine   ////////////////////////
@@ -87,7 +88,7 @@ void wyswietl() {
   if (sekundy < 10)  // jak sekundy od 0 do 9 to trzeba zero dopisac
     lcd.print(0);
   lcd.print(sekundy);
-  lcd.print(" dzien-");
+  lcd.print(" dzie-");
   lcd.print(dzien);
 }
 
@@ -101,13 +102,13 @@ void sprawdz() {
     }
     if (godziny != tablicaGodzin[i] && kontrolkaTemp == false)
       kontrolkaTemp = false;
-  }
-  if (dzien == 6 || dzien == 7)
-    kontrolkaTemp = true;
-
+  }if(dzien==5)kontrolkaTemp=true;
+  if(dzien==6)kontrolkaTemp=true;
+  
   if (kontrolkaTemp) {
-    Serial.println("godziny sa takie same");
-    Serial.println("wlaczam bojler");
+    Serial.println("godziny sa takie same ");
+    Serial.print(godziny);Serial.print(":");Serial.print(minuty);Serial.print("   ...");
+    Serial.println(" wlaczam bojler");
     kontrolkaWlaczeniaBojlera = true;
     uruchomBojlej();
 
