@@ -8,7 +8,7 @@ int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
 int sekundy = 15;
 int dzien = 7;
-int tablicaGodzin[] = { 13, 14, 22,  23, 00, 01, 02, 03, 04, 05 };
+int tablicaGodzin[] = { 13, 14,21, 22,  23, 00, 01, 02, 03, 04, 05 };
 int dlugoscTablicyGodzin = sizeof(tablicaGodzin) / sizeof(int);
 
 boolean kontrolkaWlaczeniaBojlera = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu Bojlera
@@ -22,8 +22,8 @@ void setup() {
   lcd.begin(16, 2);
   Serial.begin(9600);
   lcd.print("Bojler");
-  pinMode(2, OUTPUT);     // Przekaznik jako wyjście dla ladowarek D2
-  digitalWrite(2, true);  // Na start wylaczony przekaznik ladowarek D2
+  pinMode(6, OUTPUT);     // Przekaznik jako wyjście dla ladowarek D2
+  digitalWrite(6, true);  // Na start wylaczony przekaznik ladowarek D2
   rtc.init();
 
   boolean ustawGodzine = false;  //trzeba zrobić na true żeby można ustawić date i czas
@@ -32,10 +32,10 @@ void setup() {
     Ds1302::DateTime dt = {
       .year = 23,
       .month = Ds1302::MONTH_NOV,
-      .day = 15,
-      .hour = 21,
-      .minute = 24,
-      .second = 01,
+      .day = 16,
+      .hour = 19,
+      .minute = 19,
+      .second = 03,
       .dow = Ds1302::DOW_TUE
     };
 
@@ -89,7 +89,8 @@ void wyswietl() {
     lcd.print(0);
   lcd.print(sekundy);
   lcd.print(" dzie-");
-  lcd.print(dzien);
+  int dzienTygodnia=dzien+2;
+  lcd.print(dzienTygodnia);
 }
 
 
