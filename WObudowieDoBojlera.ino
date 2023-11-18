@@ -7,9 +7,9 @@ Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
 int sekundy = 15;
-int dzien = 7;
-int tablicaGodzin[] = { 13, 14,21, 22,  23, 00, 01, 02, 03, 04, 05 };
-int dlugoscTablicyGodzin = sizeof(tablicaGodzin) / sizeof(int);
+int dzien = 0;
+int dzienTygodnia = 2;
+char ktoryPin = 6;
 
 boolean kontrolkaWlaczeniaBojlera = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu Bojlera
 
@@ -22,8 +22,8 @@ void setup() {
   lcd.begin(16, 2);
   Serial.begin(9600);
   lcd.print("Bojler");
-  pinMode(6, OUTPUT);     // Przekaznik jako wyjście dla ladowarek D2
-  digitalWrite(6, true);  // Na start wylaczony przekaznik ladowarek D2
+  pinMode(ktoryPin, OUTPUT);     // Przekaznik jako wyjście dla ladowarek D6
+  digitalWrite(ktoryPin, true);  // Na start wylaczony przekaznik ladowarek D6
   rtc.init();
 
   boolean ustawGodzine = false;  //trzeba zrobić na true żeby można ustawić date i czas
@@ -50,19 +50,19 @@ void loop() {
   minuty = now.minute;
   sekundy = now.second;
   dzien = now.dow;
+  dzienTygodnia = dzien + 2;
 
-
-  wyswietl();
   sprawdz();
+  wyswietl();
 }
 
 
 void uruchomBojlej() {
-  digitalWrite(2, true);  // uruchamiamy pin D2
+  digitalWrite(ktoryPin, true);  // uruchamiamy pin D6
 }
 
 void wylaczBojlej() {
-  digitalWrite(2, false);  // wyłączamy pin D2
+  digitalWrite(ktoryPin, false);  // wyłączamy pin D6
 }
 
 void wyswietl() {
@@ -72,9 +72,11 @@ void wyswietl() {
     lcd.print("ON Bojler wlaczony ON ...");
 
   } else if (kontrolkaWlaczeniaBojlera == false) {
-    lcd.print("Bojler OFF");
+    lcd.print("Bojler OFF wyl   ");
   }
-  Serial.println(godziny + " " + minuty);
+  Serial.println(godziny);
+  Serial.print(":");
+  Serial.print(minuty);
   //////////////    tu wyswietlam bierzaca godzine   ////////////////////////
   lcd.setCursor(0, 1);
   if (godziny < 10)  // jak godziny od 0 do 9 to trzeba zero dopisac zeby ładnie było
@@ -88,35 +90,40 @@ void wyswietl() {
   if (sekundy < 10)  // jak sekundy od 0 do 9 to trzeba zero dopisac
     lcd.print(0);
   lcd.print(sekundy);
-  lcd.print(" dzie-");
-  int dzienTygodnia=dzien+2;
+  lcd.print(" dzien-");
   lcd.print(dzienTygodnia);
 }
 
 
 void sprawdz() {
   boolean kontrolkaTemp = false;
-  for (int i = 0; i < dlugoscTablicyGodzin; i++) {
-    delay(50);
-    if (godziny == tablicaGodzin[i]) {
-      kontrolkaTemp = true;
-    }
-    if (godziny != tablicaGodzin[i] && kontrolkaTemp == false)
-      kontrolkaTemp = false;
-  }if(dzien==5)kontrolkaTemp=true;
-  if(dzien==6)kontrolkaTemp=true;
-  
+  delay(1000);
+  if (godziny >= 22 || godziny <= 5) {
+    kontrolkaTemp = true;
+    Serial.println("godziny sa takie same nocne");
+  }
+  if (godziny >= 13 && godziny < 15) {
+    kontrolkaTemp = true;
+    Serial.println("godziny sa takie same dzienna");
+  }
+  if (dzienTygodnia >= 6) {
+    kontrolkaTemp = true;
+    Serial.print("godziny weekendowe ");
+    Serial.println(dzienTygodnia);
+  }
+
   if (kontrolkaTemp) {
-    Serial.println("godziny sa takie same ");
-    Serial.print(godziny);Serial.print(":");Serial.print(minuty);Serial.print("   ...");
+    Serial.print(godziny);
+    Serial.print(":");
+    Serial.print(minuty);
+    Serial.print("   ...");
     Serial.println(" wlaczam bojler");
     kontrolkaWlaczeniaBojlera = true;
     uruchomBojlej();
 
-  } else {
+  } else if (!kontrolkaTemp) {
     kontrolkaWlaczeniaBojlera = false;
     wylaczBojlej();
-    Serial.println("Wyłaczony>>>>>>>>>>>>>>");
+    Serial.println("    Wyłaczony   OFF >>>   ");
   }
-  kontrolkaTemp = false;
 }
