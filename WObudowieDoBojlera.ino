@@ -7,9 +7,20 @@ Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
 int sekundy = 15;
-int dzien = 0;
-int dzienTygodnia = 2;
-char ktoryPin = 6;
+char dzien = 0;
+char dzienTygodnia = 2;
+const static char* DniTygodnia[] = {
+  "Poniedz",
+  "Wtorek ",
+  "Sroda  ",
+  "Czwarte",
+  "Piatek ",
+  "Sobota ",
+  "Niedzie"
+};
+
+char pinBojler = 6;
+char pinWentylator = 5;
 
 boolean kontrolkaWlaczeniaBojlera = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu Bojlera
 
@@ -22,8 +33,10 @@ void setup() {
   lcd.begin(16, 2);
   Serial.begin(9600);
   lcd.print("Bojler");
-  pinMode(ktoryPin, OUTPUT);     // Przekaznik jako wyjście dla ladowarek D6
-  digitalWrite(ktoryPin, true);  // Na start wylaczony przekaznik ladowarek D6
+  pinMode(pinBojler, OUTPUT);         // Przekaznik jako wyjście dla bojlera D6
+  digitalWrite(pinBojler, true);      // Na start wylaczony przekaznik bojler D6
+  pinMode(pinWentylator, OUTPUT);     // Przekaznik jako wyjście dla wentylator D5
+  digitalWrite(pinWentylator, true);  // Na start wylaczony przekaznik wentylator D5
   rtc.init();
 
   boolean ustawGodzine = false;  //trzeba zrobić na true żeby można ustawić date i czas
@@ -32,11 +45,11 @@ void setup() {
     Ds1302::DateTime dt = {
       .year = 23,
       .month = Ds1302::MONTH_NOV,
-      .day = 16,
-      .hour = 19,
-      .minute = 19,
+      .day = 27,
+      .hour = 11,
+      .minute = 54,
       .second = 03,
-      .dow = Ds1302::DOW_TUE
+      .dow = Ds1302::DOW_MON
     };
 
     rtc.setDateTime(&dt);
@@ -50,30 +63,28 @@ void loop() {
   minuty = now.minute;
   sekundy = now.second;
   dzien = now.dow;
-  dzienTygodnia = dzien + 2;
+  dzienTygodnia = dzien - 1;
 
   sprawdz();
   wyswietl();
 }
-
-
-void uruchomBojlej() {
-  digitalWrite(ktoryPin, true);  // uruchamiamy pin D6
+void uruchomPrzekaznikNr(char pinPrzekaznika) {
+  digitalWrite(pinPrzekaznika, true);
 }
-
-void wylaczBojlej() {
-  digitalWrite(ktoryPin, false);  // wyłączamy pin D6
+void wylaczPrzekaznikNr(char pinPrzekaznika) {
+  digitalWrite(pinPrzekaznika, false);
 }
 
 void wyswietl() {
   lcd.setCursor(0, 0);
   if (kontrolkaWlaczeniaBojlera == true)  // tu sprawdzam ktora wersje wyswietlic
   {
-    lcd.print("ON Bojler wlaczony ON ...");
+    lcd.print("Bojler ON II taryfa");
 
   } else if (kontrolkaWlaczeniaBojlera == false) {
-    lcd.print("Bojler OFF wyl   ");
+    lcd.print("Bojler OFF I taryfa");
   }
+
   Serial.println(godziny);
   Serial.print(":");
   Serial.print(minuty);
@@ -90,8 +101,8 @@ void wyswietl() {
   if (sekundy < 10)  // jak sekundy od 0 do 9 to trzeba zero dopisac
     lcd.print(0);
   lcd.print(sekundy);
-  lcd.print(" dzien-");
-  lcd.print(dzienTygodnia);
+  lcd.print(" ");
+  lcd.print(DniTygodnia[dzienTygodnia]);
 }
 
 
@@ -111,7 +122,6 @@ void sprawdz() {
     Serial.print("godziny weekendowe ");
     Serial.println(dzienTygodnia);
   }
-
   if (kontrolkaTemp) {
     Serial.print(godziny);
     Serial.print(":");
@@ -119,11 +129,12 @@ void sprawdz() {
     Serial.print("   ...");
     Serial.println(" wlaczam bojler");
     kontrolkaWlaczeniaBojlera = true;
-    uruchomBojlej();
-
+    uruchomPrzekaznikNr(pinBojler);
+    //  wylaczPrzekaznikNr(pinBojler);
   } else if (!kontrolkaTemp) {
     kontrolkaWlaczeniaBojlera = false;
-    wylaczBojlej();
+    wylaczPrzekaznikNr(pinBojler);
+    uruchomPrzekaznikNr(pinWentylator);
     Serial.println("    Wyłaczony   OFF >>>   ");
   }
 }
