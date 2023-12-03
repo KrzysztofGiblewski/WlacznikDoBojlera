@@ -4,6 +4,7 @@
 #include <Ds1302.h>   // zegar
 Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 
+float temperatura = 60;
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
 int sekundy = 15;
@@ -21,6 +22,7 @@ const static char* DniTygodnia[] = {
 
 char pinBojler = 6;
 char pinWentylator = 5;
+char pinCzujnikaTemperatury = 15;  //czyli analogowy A1 środkowa nóżka
 
 boolean kontrolkaWlaczeniaBojlera = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu Bojlera
 
@@ -67,6 +69,10 @@ void loop() {
 
   sprawdz();
   wyswietl();
+
+  temperatura = ((analogRead(pinCzujnikaTemperatury) * 5.0) / 1024.0) * 100;
+  Serial.print("temperatura:");
+  Serial.println(temperatura);
 }
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
@@ -76,20 +82,8 @@ void wylaczPrzekaznikNr(char pinPrzekaznika) {
 }
 
 void wyswietl() {
-  lcd.setCursor(0, 0);
-  if (kontrolkaWlaczeniaBojlera == true)  // tu sprawdzam ktora wersje wyswietlic
-  {
-    lcd.print("Bojler ON II taryfa");
-
-  } else if (kontrolkaWlaczeniaBojlera == false) {
-    lcd.print("Bojler OFF I taryfa");
-  }
-
-  Serial.println(godziny);
-  Serial.print(":");
-  Serial.print(minuty);
   //////////////    tu wyswietlam bierzaca godzine   ////////////////////////
-  lcd.setCursor(0, 1);
+  lcd.setCursor(0, 0);
   if (godziny < 10)  // jak godziny od 0 do 9 to trzeba zero dopisac zeby ładnie było
     lcd.print(0);
   lcd.print(godziny);
@@ -103,12 +97,33 @@ void wyswietl() {
   lcd.print(sekundy);
   lcd.print(" ");
   lcd.print(DniTygodnia[dzienTygodnia]);
+   lcd.setCursor(0, 1);
+  if (kontrolkaWlaczeniaBojlera == true)  // tu sprawdzam ktora wersje wyswietlic
+  {
+    lcd.print("Boj ON temp");    
+
+  } else if (kontrolkaWlaczeniaBojlera == false) {
+    lcd.print("Boj OFF temp");
+  }
+lcd.print(temperatura);
+
+
+  Serial.print(godziny);
+  Serial.print(":");
+  Serial.print(minuty);
+  Serial.print(":");
+  Serial.println(sekundy);
+ 
 }
 
 
 void sprawdz() {
   boolean kontrolkaTemp = false;
   delay(1000);
+  temperatura = ((analogRead(pinCzujnikaTemperatury) * 5.0) / 1024.0) * 100;
+  Serial.print("temperatura:");
+  Serial.println(temperatura);
+
   if (godziny >= 22 || godziny <= 5) {
     kontrolkaTemp = true;
     Serial.println("godziny sa takie same nocne");
