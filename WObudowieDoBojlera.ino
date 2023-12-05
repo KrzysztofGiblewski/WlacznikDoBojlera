@@ -1,9 +1,10 @@
-
+#define Czujnik_LM35 A0
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <Ds1302.h>   // zegar
 Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 
+int kroczki = 0;
 float temperatura = 60;
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
@@ -22,7 +23,7 @@ const static char* DniTygodnia[] = {
 
 char pinBojler = 6;
 char pinWentylator = 5;
-char pinCzujnikaTemperatury = 15;  //czyli analogowy A1 środkowa nóżka
+// char pinCzujnikaTemperatury = 15;  //czyli analogowy A1 środkowa nóżka
 
 boolean kontrolkaWlaczeniaBojlera = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu Bojlera
 
@@ -35,6 +36,7 @@ void setup() {
   lcd.begin(16, 2);
   Serial.begin(9600);
   lcd.print("Bojler");
+  pinMode(Czujnik_LM35, INPUT);
   pinMode(pinBojler, OUTPUT);         // Przekaznik jako wyjście dla bojlera D6
   digitalWrite(pinBojler, true);      // Na start wylaczony przekaznik bojler D6
   pinMode(pinWentylator, OUTPUT);     // Przekaznik jako wyjście dla wentylator D5
@@ -46,12 +48,12 @@ void setup() {
   if (ustawGodzine) {
     Ds1302::DateTime dt = {
       .year = 23,
-      .month = Ds1302::MONTH_NOV,
-      .day = 27,
-      .hour = 11,
-      .minute = 54,
+      .month = Ds1302::MONTH_OCT,
+      .day = 05,
+      .hour = 20,
+      .minute = 48,
       .second = 03,
-      .dow = Ds1302::DOW_MON
+      .dow = Ds1302::DOW_TUE
     };
 
     rtc.setDateTime(&dt);
@@ -69,10 +71,6 @@ void loop() {
 
   sprawdz();
   wyswietl();
-
-  temperatura = ((analogRead(pinCzujnikaTemperatury) * 5.0) / 1024.0) * 100;
-  Serial.print("temperatura:");
-  Serial.println(temperatura);
 }
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
@@ -97,15 +95,15 @@ void wyswietl() {
   lcd.print(sekundy);
   lcd.print(" ");
   lcd.print(DniTygodnia[dzienTygodnia]);
-   lcd.setCursor(0, 1);
+  lcd.setCursor(0, 1);
   if (kontrolkaWlaczeniaBojlera == true)  // tu sprawdzam ktora wersje wyswietlic
   {
-    lcd.print("Boj ON temp");    
+    lcd.print("Boj ON temp");
 
   } else if (kontrolkaWlaczeniaBojlera == false) {
     lcd.print("Boj OFF temp");
   }
-lcd.print(temperatura);
+  lcd.print(temperatura);
 
 
   Serial.print(godziny);
@@ -113,17 +111,24 @@ lcd.print(temperatura);
   Serial.print(minuty);
   Serial.print(":");
   Serial.println(sekundy);
- 
 }
 
 
 void sprawdz() {
   boolean kontrolkaTemp = false;
-  delay(1000);
-  temperatura = ((analogRead(pinCzujnikaTemperatury) * 5.0) / 1024.0) * 100;
-  Serial.print("temperatura:");
-  Serial.println(temperatura);
+  kroczki++;
 
+  if (kroczki = 10) {
+    analogRead(Czujnik_LM35);
+    analogRead(Czujnik_LM35);
+    analogRead(Czujnik_LM35);
+    temperatura = ((analogRead(Czujnik_LM35) * 5.0) / 1024.0) * 100;
+
+    Serial.print("temperatura:");
+    Serial.println(temperatura);
+    Serial.println(analogRead(Czujnik_LM35));
+    kroczki = 0;
+  }
   if (godziny >= 22 || godziny <= 5) {
     kontrolkaTemp = true;
     Serial.println("godziny sa takie same nocne");
@@ -152,4 +157,5 @@ void sprawdz() {
     uruchomPrzekaznikNr(pinWentylator);
     Serial.println("    Wyłaczony   OFF >>>   ");
   }
+  delay(1000);
 }
