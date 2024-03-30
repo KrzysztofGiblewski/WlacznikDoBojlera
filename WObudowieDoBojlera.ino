@@ -4,7 +4,6 @@
 #include <Ds1302.h>   // zegar
 Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 
-int kroczki = 0;
 float temperatura = 60;
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
@@ -20,7 +19,9 @@ const static char* DniTygodnia[] = {
   "Sobota ",
   "Niedzie"
 };
-
+float sreredniaTemperatyr[5]; // tablica do zbierania kolejnych odczytow
+unsigned long kroczkiPrzed=millis();
+unsigned long kroczkiPo=1000;
 char pinBojler = 6;
 char pinWentylator = 5;
 // char pinCzujnikaTemperatury = 15;  //czyli analogowy A1 środkowa nóżka
@@ -116,9 +117,9 @@ void wyswietl() {
 
 void sprawdz() {
   boolean kontrolkaTemp = false;
-  kroczki++;
-
-  if (kroczki = 10) {
+  kroczkiPrzed=millis();
+  bezpiecznikTermiczny();
+  if (kroczkiPrzed >kroczkiPo) {
     analogRead(Czujnik_LM35);
     analogRead(Czujnik_LM35);
     analogRead(Czujnik_LM35);
@@ -127,7 +128,8 @@ void sprawdz() {
     Serial.print("temperatura:");
     Serial.println(temperatura);
     Serial.println(analogRead(Czujnik_LM35));
-    kroczki = 0;
+    kroczkiPo=kroczkiPrzed+1000;
+  
   }
   if (godziny >= 22 || godziny <= 5) {
     kontrolkaTemp = true;
@@ -159,3 +161,21 @@ void sprawdz() {
   }
   delay(1000);
 }
+
+void bezpiecznikTermiczny(){
+sreredniaTemperatyr[4]=sreredniaTemperatyr[3];
+sreredniaTemperatyr[3]=sreredniaTemperatyr[2];
+sreredniaTemperatyr[2]=sreredniaTemperatyr[1];
+sreredniaTemperatyr[1]=sreredniaTemperatyr[0];
+sreredniaTemperatyr[0]=analogRead(Czujnik_LM35);
+ 
+  float sumaTemp,sredniaTemp;
+ for (int i; i++; i>4) {
+  sumaTemp+=sreredniaTemperatyr[i];
+   }
+ sredniaTemp= sumaTemp*0.2;
+ if (sredniaTemp>80.0) {
+ kontrolkaWlaczeniaBojlera=false;
+ }
+ sredniaTemp=0;
+ }
