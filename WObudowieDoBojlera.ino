@@ -72,6 +72,7 @@ void loop() {
 
   sprawdz();
   wyswietl();
+  bezpiecznikTermiczny();
 }
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
@@ -118,7 +119,6 @@ void wyswietl() {
 void sprawdz() {
   boolean kontrolkaTemp = false;
   kroczkiPrzed=millis();
-  bezpiecznikTermiczny();
   if (kroczkiPrzed >kroczkiPo) {
     analogRead(Czujnik_LM35);
     analogRead(Czujnik_LM35);
@@ -162,12 +162,12 @@ void sprawdz() {
   delay(1000);
 }
 
-void bezpiecznikTermiczny(){
+void bezpiecznikTermiczny(float temperatura){
 sreredniaTemperatyr[4]=sreredniaTemperatyr[3];
 sreredniaTemperatyr[3]=sreredniaTemperatyr[2];
 sreredniaTemperatyr[2]=sreredniaTemperatyr[1];
 sreredniaTemperatyr[1]=sreredniaTemperatyr[0];
-sreredniaTemperatyr[0]=analogRead(Czujnik_LM35);
+sreredniaTemperatyr[0]=temperatura;
  
   float sumaTemp,sredniaTemp;
  for (int i; i++; i>4) {
@@ -176,6 +176,8 @@ sreredniaTemperatyr[0]=analogRead(Czujnik_LM35);
  sredniaTemp= sumaTemp*0.2;
  if (sredniaTemp>80.0) {
  kontrolkaWlaczeniaBojlera=false;
+ }else if (sredniaTemp<=80) {
+ kontrolkaWlaczeniaBojlera=true;
  }
  sredniaTemp=0;
  }
