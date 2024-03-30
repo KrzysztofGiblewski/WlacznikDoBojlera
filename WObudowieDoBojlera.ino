@@ -22,8 +22,9 @@ const static char* DniTygodnia[] = {
 float sreredniaTemperatyr[] = { 40.1, 40.2, 40.3, 40.4, 40.5 };  // tablica do zbierania kolejnych odczytow
 unsigned long kroczkiBierzace = millis();
 unsigned long kroczkiPoSpr = 1000;
-unsigned long kroczkipoodczycie=1000;
-unsigned long kroczkiPoOdczycie;
+unsigned long kroczkiPoOdczycie=1000;
+int interwalSprawdz=1000; 
+int interwalPoOdczycie=1000;
 char pinBojler = 6;
 char pinWentylator = 5;
 // char pinCzujnikaTemperatury = 15;  //czyli analogowy A1 środkowa nóżka
