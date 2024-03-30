@@ -19,9 +19,11 @@ const static char* DniTygodnia[] = {
   "Sobota ",
   "Niedzie"
 };
-float sreredniaTemperatyr[5]; // tablica do zbierania kolejnych odczytow
-unsigned long kroczkiPrzed=millis();
-unsigned long kroczkiPo=1000;
+float sreredniaTemperatyr[] = { 40.1, 40.2, 40.3, 40.4, 40.5 };  // tablica do zbierania kolejnych odczytow
+unsigned long kroczkiPrzed = millis();
+unsigned long kroczkiPoSpr = 1000;
+unsigned long kroczkipoodczycie=1000;
+unsigned long kroczkiPoOdczycie;
 char pinBojler = 6;
 char pinWentylator = 5;
 // char pinCzujnikaTemperatury = 15;  //czyli analogowy A1 środkowa nóżka
@@ -70,9 +72,10 @@ void loop() {
   dzien = now.dow;
   dzienTygodnia = dzien - 1;
 
+  odczytajTemperature();
   sprawdz();
   wyswietl();
-  bezpiecznikTermiczny();
+  bezpiecznikTermiczny(temperatura);
 }
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
@@ -115,69 +118,71 @@ void wyswietl() {
   Serial.println(sekundy);
 }
 
-
-void sprawdz() {
-  boolean kontrolkaTemp = false;
-  kroczkiPrzed=millis();
-  if (kroczkiPrzed >kroczkiPo) {
+void odczytajTemperature() {
+  
+  if (kroczkiPrzed > kroczkiPoOdczycie) {
     analogRead(Czujnik_LM35);
     analogRead(Czujnik_LM35);
     analogRead(Czujnik_LM35);
     temperatura = ((analogRead(Czujnik_LM35) * 5.0) / 1024.0) * 100;
-
     Serial.print("temperatura:");
     Serial.println(temperatura);
     Serial.println(analogRead(Czujnik_LM35));
-    kroczkiPo=kroczkiPrzed+1000;
-  
+    kroczkipoodczycie = kroczkiPrzed + 1000;
   }
-  if (godziny >= 22 || godziny <= 5) {
-    kontrolkaTemp = true;
-    Serial.println("godziny sa takie same nocne");
+}
+void sprawdz() {
+  kroczkiPrzed = millis();
+
+  boolean kontrolkaTemp = false;
+  if (kroczkiPrzed > kroczkiPoSpr) {  // zamiast delay
+
+    if (godziny >= 22 || godziny <= 5) {
+      kontrolkaTemp = true;
+      Serial.println("godziny sa takie same nocne");
+    }
+    if (godziny >= 13 && godziny < 15) {
+      kontrolkaTemp = true;
+      Serial.println("godziny sa takie same dzienna");
+    }
+    if (dzien >= 6) {
+      kontrolkaTemp = true;
+      Serial.print("godziny weekendowe ");
+      Serial.println(dzienTygodnia);
+    }
+    if (kontrolkaTemp) {
+      Serial.print(godziny);
+      Serial.print(":");
+      Serial.print(minuty);
+      Serial.print("   ...");
+      Serial.println(" wlaczam bojler");
+      kontrolkaWlaczeniaBojlera = true;
+      uruchomPrzekaznikNr(pinBojler);
+      //  wylaczPrzekaznikNr(pinBojler);
+    } else if (!kontrolkaTemp) {
+      kontrolkaWlaczeniaBojlera = false;
+      wylaczPrzekaznikNr(pinBojler);
+      uruchomPrzekaznikNr(pinWentylator);
+      Serial.println("    Wyłaczony   OFF >>>   ");
+    }
   }
-  if (godziny >= 13 && godziny < 15) {
-    kontrolkaTemp = true;
-    Serial.println("godziny sa takie same dzienna");
-  }
-  if (dzien >= 6) {
-    kontrolkaTemp = true;
-    Serial.print("godziny weekendowe ");
-    Serial.println(dzienTygodnia);
-  }
-  if (kontrolkaTemp) {
-    Serial.print(godziny);
-    Serial.print(":");
-    Serial.print(minuty);
-    Serial.print("   ...");
-    Serial.println(" wlaczam bojler");
-    kontrolkaWlaczeniaBojlera = true;
-    uruchomPrzekaznikNr(pinBojler);
-    //  wylaczPrzekaznikNr(pinBojler);
-  } else if (!kontrolkaTemp) {
-    kontrolkaWlaczeniaBojlera = false;
-    wylaczPrzekaznikNr(pinBojler);
-    uruchomPrzekaznikNr(pinWentylator);
-    Serial.println("    Wyłaczony   OFF >>>   ");
-  }
-  delay(1000);
+  kroczkiPoSpr = kroczkiPrzed + 1000;
+  //delay(1000);
 }
 
-void bezpiecznikTermiczny(float temperatura){
-sreredniaTemperatyr[4]=sreredniaTemperatyr[3];
-sreredniaTemperatyr[3]=sreredniaTemperatyr[2];
-sreredniaTemperatyr[2]=sreredniaTemperatyr[1];
-sreredniaTemperatyr[1]=sreredniaTemperatyr[0];
-sreredniaTemperatyr[0]=temperatura;
- 
-  float sumaTemp,sredniaTemp;
- for (int i; i++; i>4) {
-  sumaTemp+=sreredniaTemperatyr[i];
-   }
- sredniaTemp= sumaTemp*0.2;
- if (sredniaTemp>80.0) {
- kontrolkaWlaczeniaBojlera=false;
- }else if (sredniaTemp<=80) {
- kontrolkaWlaczeniaBojlera=true;
- }
- sredniaTemp=0;
- }
+void bezpiecznikTermiczny(float temperatura) {
+  sreredniaTemperatyr[4] = sreredniaTemperatyr[3];
+  sreredniaTemperatyr[3] = sreredniaTemperatyr[2];
+  sreredniaTemperatyr[2] = sreredniaTemperatyr[1];
+  sreredniaTemperatyr[1] = sreredniaTemperatyr[0];
+  sreredniaTemperatyr[0] = temperatura;
+
+  float sumaTemp, sredniaTemp = 0;
+  for (int i; i++; i > 4) {
+    sumaTemp += sreredniaTemperatyr[i];
+  }
+  sredniaTemp = sumaTemp * 0.2;
+  if (sredniaTemp > 80.0) {
+    kontrolkaWlaczeniaBojlera = false;
+  }
+}
