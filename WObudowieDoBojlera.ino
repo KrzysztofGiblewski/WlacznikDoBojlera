@@ -137,7 +137,7 @@ void sprawdz() {
     kontrolkaTemp = true;
     Serial.println("godziny sa takie same dzienna");
   }
-  if (dzienTygodnia >= 6) {
+  if (dzien >= 6) {
     kontrolkaTemp = true;
     Serial.print("godziny weekendowe ");
     Serial.println(dzienTygodnia);
