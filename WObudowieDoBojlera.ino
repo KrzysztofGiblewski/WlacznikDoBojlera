@@ -185,5 +185,6 @@ void bezpiecznikTermiczny(float temperatura) {
   sredniaTemp = sumaTemp * 0.2;
   if (sredniaTemp > 80.0) {
     kontrolkaWlaczeniaBojlera = false;
+wylaczPrzekaznikNr(pinBojler);
   }
 }
