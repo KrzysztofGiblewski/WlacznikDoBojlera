@@ -20,7 +20,7 @@ const static char* DniTygodnia[] = {
   "Niedzie"
 };
 float sreredniaTemperatyr[] = { 40.1, 40.2, 40.3, 40.4, 40.5 };  // tablica do zbierania kolejnych odczytow
-unsigned long kroczkiPrzed = millis();
+unsigned long kroczkiBierzace = millis();
 unsigned long kroczkiPoSpr = 1000;
 unsigned long kroczkipoodczycie=1000;
 unsigned long kroczkiPoOdczycie;
@@ -64,6 +64,8 @@ void setup() {
 }
 
 void loop() {
+  kroczkiBierzace = millis();
+
   Ds1302::DateTime now;
   rtc.getDateTime(&now);
   godziny = now.hour;
@@ -120,7 +122,7 @@ void wyswietl() {
 
 void odczytajTemperature() {
   
-  if (kroczkiPrzed > kroczkiPoOdczycie) {
+  if (kroczkiBierzace > kroczkiPoOdczycie) {
     analogRead(Czujnik_LM35);
     analogRead(Czujnik_LM35);
     analogRead(Czujnik_LM35);
@@ -128,14 +130,13 @@ void odczytajTemperature() {
     Serial.print("temperatura:");
     Serial.println(temperatura);
     Serial.println(analogRead(Czujnik_LM35));
-    kroczkipoodczycie = kroczkiPrzed + 1000;
+    kroczkipoodczycie = kroczkiBierzace + 1000;
   }
 }
 void sprawdz() {
-  kroczkiPrzed = millis();
-
+  
   boolean kontrolkaTemp = false;
-  if (kroczkiPrzed > kroczkiPoSpr) {  // zamiast delay
+  if (kroczkiBierzace > kroczkiPoSpr) {  // zamiast delay
 
     if (godziny >= 22 || godziny <= 5) {
       kontrolkaTemp = true;
@@ -166,7 +167,7 @@ void sprawdz() {
       Serial.println("    Wyłaczony   OFF >>>   ");
     }
   }
-  kroczkiPoSpr = kroczkiPrzed + 1000;
+  kroczkiPoSpr = kroczkiBierzace + 1000;
   //delay(1000);
 }
 
@@ -178,7 +179,7 @@ void bezpiecznikTermiczny(float temperatura) {
   sreredniaTemperatyr[0] = temperatura;
 
   float sumaTemp, sredniaTemp = 0;
-  for (int i; i++; i > 4) {
+  for (int i; i++; i <= 4) {
     sumaTemp += sreredniaTemperatyr[i];
   }
   sredniaTemp = sumaTemp * 0.2;
