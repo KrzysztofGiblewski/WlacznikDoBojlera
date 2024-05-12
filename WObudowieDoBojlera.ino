@@ -76,10 +76,9 @@ void loop() {
   dzienTygodnia = dzien - 1;
 
   odczytajTemperature();
-  sprawdz();
+    sprawdz();
   wyswietl();
-  bezpiecznikTermiczny(temperatura);
-}
+  }
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
 }
@@ -125,14 +124,14 @@ void wyswietl() {
 void odczytajTemperature() {
   
   if (kroczkiBierzace > kroczkiPoOdczycie) {
-    analogRead(Czujnik_LM35);
-    analogRead(Czujnik_LM35);
-    analogRead(Czujnik_LM35);
     temperatura = ((analogRead(Czujnik_LM35) * 5.0) / 1024.0) * 100;
     Serial.print("temperatura:");
     Serial.println(temperatura);
     Serial.println(analogRead(Czujnik_LM35));
-    kroczkipoodczycie = kroczkiBierzace + 5000;
+
+bezpiecznikTermiczny(temperatura);
+
+    kroczkipoodczycie = kroczkiBierzace + 2000;
   }
 }
 void sprawdz() {
@@ -174,18 +173,33 @@ void sprawdz() {
 }
 
 void bezpiecznikTermiczny(float temperatura) {
+
   sreredniaTemperatyr[4] = sreredniaTemperatyr[3];
   sreredniaTemperatyr[3] = sreredniaTemperatyr[2];
   sreredniaTemperatyr[2] = sreredniaTemperatyr[1];
   sreredniaTemperatyr[1] = sreredniaTemperatyr[0];
   sreredniaTemperatyr[0] = temperatura;
 
-  float sumaTemp , sredniaTemp= 0;
-  for (int i; i++; i <= 4) {
-    sumaTemp += sreredniaTemperatyr[i];
-  }
+  float sumaTemp=0;
+  float sredniaTemp= 0;
+  
+ sumaTemp=sreredniaTemperatyr[0]
+ +sreredniaTemperatyr[1]
+ +sreredniaTemperatyr[2]
+ +sreredniaTemperatyr[3]
+ +sreredniaTemperatyr[4];
+ 
+ 
+ 
   sredniaTemp = sumaTemp * 0.2;
   sredniaTempDoWyswietlenia=sredniaTemp;
+  Serial.print("suma temp ");
+  Serial.println(sumaTemp);
+  Serial.print("srednia ");
+  Serial.println( sredniaTempDoWyswietlenia);
+  Serial.println( temperatura);
+  
+  delay(2000);
   if (sredniaTemp > 80.0) {
     kontrolkaWlaczeniaBojlera = false;
   }
