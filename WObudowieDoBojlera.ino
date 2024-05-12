@@ -5,6 +5,7 @@
 Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 
 float temperatura = 60;
+float sredniaTempDoWyswietlenia=45;
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
 int sekundy = 15;
@@ -51,12 +52,12 @@ void setup() {
   if (ustawGodzine) {
     Ds1302::DateTime dt = {
       .year = 23,
-      .month = Ds1302::MONTH_OCT,
-      .day = 05,
-      .hour = 20,
-      .minute = 48,
+      .month = Ds1302::MONTH_MAY,
+      .day = 11,
+      .hour = 18,
+      .minute = 12,
       .second = 03,
-      .dow = Ds1302::DOW_TUE
+      .dow = Ds1302::DOW_SAT
     };
 
     rtc.setDateTime(&dt);
@@ -110,7 +111,8 @@ void wyswietl() {
   } else if (kontrolkaWlaczeniaBojlera == false) {
     lcd.print("Boj OFF temp");
   }
-  lcd.print(temperatura);
+  //lcd.print(temperatura);
+  lcd.print(sredniaTempDoWyswietlenia);
 
 
   Serial.print(godziny);
@@ -130,7 +132,7 @@ void odczytajTemperature() {
     Serial.print("temperatura:");
     Serial.println(temperatura);
     Serial.println(analogRead(Czujnik_LM35));
-    kroczkipoodczycie = kroczkiBierzace + 1000;
+    kroczkipoodczycie = kroczkiBierzace + 5000;
   }
 }
 void sprawdz() {
@@ -178,12 +180,14 @@ void bezpiecznikTermiczny(float temperatura) {
   sreredniaTemperatyr[1] = sreredniaTemperatyr[0];
   sreredniaTemperatyr[0] = temperatura;
 
-  float sumaTemp, sredniaTemp = 0;
+  float sumaTemp , sredniaTemp= 0;
   for (int i; i++; i <= 4) {
     sumaTemp += sreredniaTemperatyr[i];
   }
   sredniaTemp = sumaTemp * 0.2;
+  sredniaTempDoWyswietlenia=sredniaTemp;
   if (sredniaTemp > 80.0) {
     kontrolkaWlaczeniaBojlera = false;
   }
+
 }
