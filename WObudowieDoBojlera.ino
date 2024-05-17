@@ -5,7 +5,7 @@
 Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 
 float temperatura = 60;
-float sredniaTempDoWyswietlenia=45;
+float sredniaTempDoWyswietlenia = 45;
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
 int sekundy = 15;
@@ -20,11 +20,12 @@ const static char* DniTygodnia[] = {
   "Sobota ",
   "Niedzie"
 };
-float sreredniaTemperatyr[] = { 40.1, 40.2, 40.3, 40.4, 40.5 };  // tablica do zbierania kolejnych odczytow
+bool kontrolkaTemp = false;
+float sreredniaTemperatyr[] = { 30.1, 30.2, 30.3, 30.4, 30.5 };  // tablica do zbierania kolejnych odczytow
 unsigned long kroczkiBierzace = millis();
-unsigned long kroczkiPoSpr = 1000;
-unsigned long kroczkipoodczycie=1000;
-unsigned long kroczkiPoOdczycie;
+unsigned long kroczkiPoSpr=1;
+unsigned long kroczkiPoOdczycie=1;
+unsigned long kroczkiPoWyswietleniu=1;
 char pinBojler = 6;
 char pinWentylator = 5;
 // char pinCzujnikaTemperatury = 15;  //czyli analogowy A1 środkowa nóżka
@@ -66,7 +67,6 @@ void setup() {
 
 void loop() {
   kroczkiBierzace = millis();
-
   Ds1302::DateTime now;
   rtc.getDateTime(&now);
   godziny = now.hour;
@@ -76,9 +76,9 @@ void loop() {
   dzienTygodnia = dzien - 1;
 
   odczytajTemperature();
-    sprawdz();
+  sprawdz();
   wyswietl();
-  }
+}
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
 }
@@ -88,57 +88,52 @@ void wylaczPrzekaznikNr(char pinPrzekaznika) {
 
 void wyswietl() {
   //////////////    tu wyswietlam bierzaca godzine   ////////////////////////
-  lcd.setCursor(0, 0);
-  if (godziny < 10)  // jak godziny od 0 do 9 to trzeba zero dopisac zeby ładnie było
-    lcd.print(0);
-  lcd.print(godziny);
-  lcd.print(":");
-  if (minuty < 10)  // jak minuty od 0 do 9 to trzeba zero dopisac
-    lcd.print(0);
-  lcd.print(minuty);
-  lcd.print(":");
-  if (sekundy < 10)  // jak sekundy od 0 do 9 to trzeba zero dopisac
-    lcd.print(0);
-  lcd.print(sekundy);
-  lcd.print(" ");
-  lcd.print(DniTygodnia[dzienTygodnia]);
-  lcd.setCursor(0, 1);
-  if (kontrolkaWlaczeniaBojlera == true)  // tu sprawdzam ktora wersje wyswietlic
-  {
-    lcd.print("Boj ON temp");
-
-  } else if (kontrolkaWlaczeniaBojlera == false) {
-    lcd.print("Boj OFF temp");
+  if (kroczkiBierzace > kroczkiPoWyswietleniu) {
+    lcd.setCursor(0, 0);
+    if (godziny < 10)  // jak godziny od 0 do 9 to trzeba zero dopisac zeby ładnie było
+      lcd.print(0);
+    lcd.print(godziny);
+    lcd.print(":");
+    if (minuty < 10)  // jak minuty od 0 do 9 to trzeba zero dopisac
+      lcd.print(0);
+    lcd.print(minuty);
+    lcd.print(":");
+    if (sekundy < 10)  // jak sekundy od 0 do 9 to trzeba zero dopisac
+      lcd.print(0);
+    lcd.print(sekundy);
+    lcd.print(" ");
+    lcd.print(DniTygodnia[dzienTygodnia]);
+    lcd.setCursor(0, 1);
+    if (kontrolkaWlaczeniaBojlera == true)  // tu sprawdzam ktora wersje wyswietlic
+    {
+      lcd.print("Boj ON tem.");
+    } else if (kontrolkaWlaczeniaBojlera == false) {
+      lcd.print("Boj OFF tem.");
+    }
+    lcd.print(sredniaTempDoWyswietlenia);
+    Serial.print(godziny);
+    Serial.print(":");
+    Serial.print(minuty);
+    Serial.print(":");
+    Serial.println(sekundy);
+    kroczkiPoWyswietleniu = kroczkiBierzace + 100;
   }
-  //lcd.print(temperatura);
-  lcd.print(sredniaTempDoWyswietlenia);
-
-
-  Serial.print(godziny);
-  Serial.print(":");
-  Serial.print(minuty);
-  Serial.print(":");
-  Serial.println(sekundy);
 }
 
 void odczytajTemperature() {
-  
+
   if (kroczkiBierzace > kroczkiPoOdczycie) {
     temperatura = ((analogRead(Czujnik_LM35) * 5.0) / 1024.0) * 100;
     Serial.print("temperatura:");
     Serial.println(temperatura);
     Serial.println(analogRead(Czujnik_LM35));
-
-bezpiecznikTermiczny(temperatura);
-
-    kroczkipoodczycie = kroczkiBierzace + 2000;
+    wyciagnijSredniaTemperature(temperatura);
+    kroczkiPoOdczycie = kroczkiBierzace + 5000;
   }
 }
 void sprawdz() {
-  
-  boolean kontrolkaTemp = false;
   if (kroczkiBierzace > kroczkiPoSpr) {  // zamiast delay
-
+    kontrolkaTemp = false;
     if (godziny >= 22 || godziny <= 5) {
       kontrolkaTemp = true;
       Serial.println("godziny sa takie same nocne");
@@ -168,40 +163,37 @@ void sprawdz() {
       Serial.println("    Wyłaczony   OFF >>>   ");
     }
   }
-  kroczkiPoSpr = kroczkiBierzace + 1000;
-  //delay(1000);
+  bezpiecznikTermiczny(sredniaTempDoWyswietlenia);
+  kroczkiPoSpr = kroczkiBierzace + 5000;
 }
 
-void bezpiecznikTermiczny(float temperatura) {
+void bezpiecznikTermiczny(float sredniaTempDoWyswietlenia) {
+  
+  if (sredniaTempDoWyswietlenia > 70.0) {
+    kontrolkaWlaczeniaBojlera = false;
+  }
+}
+
+void wyciagnijSredniaTemperature(float temperatura){
 
   sreredniaTemperatyr[4] = sreredniaTemperatyr[3];
   sreredniaTemperatyr[3] = sreredniaTemperatyr[2];
   sreredniaTemperatyr[2] = sreredniaTemperatyr[1];
   sreredniaTemperatyr[1] = sreredniaTemperatyr[0];
   sreredniaTemperatyr[0] = temperatura;
+  float sumaTemp = 0;
+  sumaTemp = sreredniaTemperatyr[0]
+             + sreredniaTemperatyr[1]
+             + sreredniaTemperatyr[2]
+             + sreredniaTemperatyr[3]
+             + sreredniaTemperatyr[4];
 
-  float sumaTemp=0;
-  float sredniaTemp= 0;
-  
- sumaTemp=sreredniaTemperatyr[0]
- +sreredniaTemperatyr[1]
- +sreredniaTemperatyr[2]
- +sreredniaTemperatyr[3]
- +sreredniaTemperatyr[4];
- 
- 
- 
-  sredniaTemp = sumaTemp * 0.2;
-  sredniaTempDoWyswietlenia=sredniaTemp;
+  float sredniaTemp = 0;
+  sredniaTemp = sumaTemp * 0.2; // zamiast dzielic przez 5 mnoze przez 0,2
+  sredniaTempDoWyswietlenia = sredniaTemp;
   Serial.print("suma temp ");
   Serial.println(sumaTemp);
   Serial.print("srednia ");
-  Serial.println( sredniaTempDoWyswietlenia);
-  Serial.println( temperatura);
-  
-  delay(2000);
-  if (sredniaTemp > 80.0) {
-    kontrolkaWlaczeniaBojlera = false;
-  }
-
+  Serial.println(sredniaTempDoWyswietlenia);
+  Serial.println(temperatura);
 }
