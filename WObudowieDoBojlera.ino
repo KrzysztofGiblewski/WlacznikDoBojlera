@@ -20,15 +20,15 @@ const static char* DniTygodnia[] = {
   "Sobota ",
   "Niedzie"
 };
-bool kontrolkaTemp = false;
+bool kontrolaGodzinDniDrugiejTRaryfy = false;
 float sreredniaTemperatyr[] = { 30.1, 30.2, 30.3, 30.4, 30.5 };  // tablica do zbierania kolejnych odczytow
 unsigned long kroczkiBierzace = millis();
-unsigned long kroczkiPoSpr=1;
-unsigned long kroczkiPoOdczycie=1;
-unsigned long kroczkiPoWyswietleniu=1;
-unsigned long przerwaSpr =5000;
-unsigned long przerwaPoOdczycie =5000;
-unsigned long przerwaWyswietleniu =200;
+unsigned long kroczkiPoSpr = 1;
+unsigned long kroczkiPoOdczycie = 1;
+unsigned long kroczkiPoWyswietleniu = 1;
+unsigned long przerwaSpr = 5000;
+unsigned long przerwaPoOdczycie = 5000;
+unsigned long przerwaWyswietleniu = 200;
 char pinBojler = 6;
 char pinWentylator = 5;
 boolean kontrolkaWlaczeniaBojlera = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu Bojlera
@@ -77,9 +77,11 @@ void loop() {
   dzienTygodnia = dzien - 1;
 
   odczytajTemperature();
-  sprawdz();
+  sprawdzTaryfe();
   wyswietl();
 }
+
+
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
 }
@@ -131,40 +133,41 @@ void odczytajTemperature() {
     kroczkiPoOdczycie = kroczkiBierzace;
   }
 }
-void sprawdz() {
+
+void sprawdzTaryfe() {
   if (kroczkiBierzace - kroczkiPoSpr > przerwaSpr) {  // zamiast delay
-    kontrolkaTemp = false;
+    kontrolaGodzinDniDrugiejTRaryfy = false;          // zeruje kontrolke stanu bierzacej taryfy
     if (godziny >= 22 || godziny <= 5) {
-      kontrolkaTemp = true;
+      kontrolaGodzinDniDrugiejTRaryfy = true;  // nadaje kontrolce stan true bo to druga taryfa
       Serial.println("godziny sa takie same nocne");
     }
     if (godziny >= 13 && godziny < 15) {
-      kontrolkaTemp = true;
+      kontrolaGodzinDniDrugiejTRaryfy = true;
       Serial.println("godziny sa takie same dzienna");
     }
     if (dzien >= 6) {
-      kontrolkaTemp = true;
+      kontrolaGodzinDniDrugiejTRaryfy = true;
       Serial.print("godziny weekendowe ");
       Serial.println(dzienTygodnia);
     }
-    if (kontrolkaTemp) {
+    if (kontrolaGodzinDniDrugiejTRaryfy) {
       Serial.print(godziny);
       Serial.print(":");
       Serial.print(minuty);
       Serial.print("   ...");
       Serial.println(" wlaczam bojler");
-      kontrolkaWlaczeniaBojlera = true;
+      kontrolkaWlaczeniaBojlera = true;  // kontrolka stanu wlaczenia bojlera
       uruchomPrzekaznikNr(pinBojler);
       uruchomPrzekaznikNr(pinWentylator);
-    } else if (!kontrolkaTemp) {
+    } else if (!kontrolaGodzinDniDrugiejTRaryfy) {
       kontrolkaWlaczeniaBojlera = false;
       wylaczPrzekaznikNr(pinBojler);
       wylaczPrzekaznikNr(pinWentylator);
       Serial.println("    Wyłaczony   OFF >>>   ");
     }
-    
-  bezpiecznikTermiczny(sredniaTempDoWyswietlenia);
-  kroczkiPoSpr = kroczkiBierzace;
+
+    bezpiecznikTermiczny(sredniaTempDoWyswietlenia);
+    kroczkiPoSpr = kroczkiBierzace;
   }
 }
 
@@ -174,7 +177,7 @@ void bezpiecznikTermiczny(float sredniaTempDoWyswietlenia) {
   }
 }
 
-void wyciagnijSredniaTemperature(float temperatura){
+void wyciagnijSredniaTemperature(float temperatura) {
   sreredniaTemperatyr[4] = sreredniaTemperatyr[3];
   sreredniaTemperatyr[3] = sreredniaTemperatyr[2];
   sreredniaTemperatyr[2] = sreredniaTemperatyr[1];
@@ -187,7 +190,7 @@ void wyciagnijSredniaTemperature(float temperatura){
              + sreredniaTemperatyr[3]
              + sreredniaTemperatyr[4];
   float sredniaTemp = 0;
-  sredniaTemp = sumaTemp * 0.2; // zamiast dzielic przez 5 mnoze przez 0,2
+  sredniaTemp = sumaTemp * 0.2;  // zamiast dzielic przez 5 mnoze przez 0,2
   sredniaTempDoWyswietlenia = sredniaTemp;
   Serial.print("suma temp ");
   Serial.println(sumaTemp);
