@@ -27,7 +27,7 @@ unsigned long kroczkiPoSpr=1;
 unsigned long kroczkiPoOdczycie=1;
 unsigned long kroczkiPoWyswietleniu=1;
 unsigned long przerwaSpr =5000;
-unsigned long przerwaPoOdczycie =5000;
+unsigned long przerwaPoOdczycie =1000;
 unsigned long przerwaWyswietleniu =200;
 char pinBojler = 6;
 char pinWentylator = 5;
@@ -159,7 +159,7 @@ void sprawdz() {
     } else if (!kontrolkaTemp) {
       kontrolkaWlaczeniaBojlera = false;
       wylaczPrzekaznikNr(pinBojler);
-     // uruchomPrzekaznikNr(pinWentylator);
+      uruchomPrzekaznikNr(pinWentylator);
       Serial.println("    Wyłaczony   OFF >>>   ");
     }
   }
