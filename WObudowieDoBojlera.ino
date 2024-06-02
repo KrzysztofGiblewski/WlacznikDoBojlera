@@ -155,16 +155,17 @@ void sprawdz() {
       Serial.println(" wlaczam bojler");
       kontrolkaWlaczeniaBojlera = true;
       uruchomPrzekaznikNr(pinBojler);
-      //  wylaczPrzekaznikNr(pinBojler);
+      uruchomPrzekaznikNr(pinWentylator);
     } else if (!kontrolkaTemp) {
       kontrolkaWlaczeniaBojlera = false;
       wylaczPrzekaznikNr(pinBojler);
-     // uruchomPrzekaznikNr(pinWentylator);
+      wylaczPrzekaznikNr(pinWentylator);
       Serial.println("    Wyłaczony   OFF >>>   ");
     }
-  }
+    
   bezpiecznikTermiczny(sredniaTempDoWyswietlenia);
   kroczkiPoSpr = kroczkiBierzace;
+  }
 }
 
 void bezpiecznikTermiczny(float sredniaTempDoWyswietlenia) {
