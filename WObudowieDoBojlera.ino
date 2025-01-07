@@ -1,4 +1,4 @@
-#define Czujnik_LM35 A0
+#define Czujnik_LM35 A0  // pin 14
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <Ds1302.h>   // zegar
@@ -29,8 +29,21 @@ unsigned long kroczkiPoWyswietleniu = 1;
 unsigned long przerwaSpr = 5000;
 unsigned long przerwaPoOdczycie = 5000;
 unsigned long przerwaWyswietleniu = 200;
-char pinBojler = 6;
-char pinWentylator = 5;
+
+char pinBojler = 6;      //D6
+char pinWentylator = 5;  //D5
+
+char pinPrzyciskSet = 2;           //D2 biały
+char pinPrzyciskPlus = 3;          //D3 czerwony
+char pinPrzyciskMinus = 4;         //D4 zielony
+char pinPrzyciskWlaczPlus = 13;    //D13 czarny
+char pinPrzyciskWylaczMinus = 12;  //D12 biały/biały
+
+
+
+
+
+
 boolean kontrolkaWlaczeniaBojlera = false;  // kontrolka wlaczonego (true) lub wylaczonego (false) stanu Bojlera
 
 //LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Ustawienie adresu ukladu na 0x27         A4 SDA        A5 SCL
@@ -42,7 +55,15 @@ void setup() {
   lcd.begin(16, 2);
   Serial.begin(9600);
   lcd.print("Bojler");
-  pinMode(Czujnik_LM35, INPUT);
+  pinMode(Czujnik_LM35, INPUT);  //czujnik temperatury
+
+  pinMode(pinPrzyciskSet, INPUT);    //przycisk "SET"
+  pinMode(pinPrzyciskPlus, INPUT);   //przycisk "plus"
+  pinMode(pinPrzyciskMinus, INPUT);  //przycisk "minus"
+
+  pinMode(pinPrzyciskWlaczPlus, INPUT);    //przycisk "Włącz natychmiast i plus"
+  pinMode(pinPrzyciskWylaczMinus, INPUT);  //przycisk "Wyłącz przez odejmowanie czasu włączenia"
+
   pinMode(pinBojler, OUTPUT);         // Przekaznik jako wyjście dla bojlera D6
   digitalWrite(pinBojler, true);      // Na start wylaczony przekaznik bojler D6
   pinMode(pinWentylator, OUTPUT);     // Przekaznik jako wyjście dla wentylator D5
@@ -53,13 +74,13 @@ void setup() {
     ////////////ustawianie godziny
   if (ustawGodzine) {
     Ds1302::DateTime dt = {
-      .year = 23,
-      .month = Ds1302::MONTH_MAY,
-      .day = 11,
-      .hour = 18,
-      .minute = 12,
+      .year = 25,
+      .month = Ds1302::MONTH_JAN,
+      .day = 7,
+      .hour = 16,
+      .minute = 2,
       .second = 03,
-      .dow = Ds1302::DOW_SAT
+      .dow = Ds1302::DOW_TUE
     };
 
     rtc.setDateTime(&dt);
@@ -79,8 +100,34 @@ void loop() {
   odczytajTemperature();
   sprawdzTaryfe();
   wyswietl();
+  ustawGodzine();
+  wlaczNatychmiast();
 }
 
+void ustawGodzine() {
+  boolean stanOdczytany;
+  boolean stanPoprzedni, stanBierzacy;
+  stanOdczytany = digitalRead(pinPrzyciskSet);
+  boolean pluss = digitalRead(pinPrzyciskPlus);
+  boolean minuss;
+  minuss = digitalRead(pinPrzyciskMinus);
+  if (stanOdczytany){
+    Serial.println("SET.SET.SET.SET.SET");
+    delay(500);}
+  if (pluss){
+    Serial.println("PluS++++++++++++++");
+    delay(500);}
+  if (minuss){
+    Serial.println("MINUS--------------");
+    delay(500);}
+}
+
+void wlaczNatychmiast() {
+  if (digitalRead(pinPrzyciskWlaczPlus))
+    Serial.println("WWWWWWWWW++WW++WW++");
+  if (digitalRead(pinPrzyciskWylaczMinus))
+    Serial.println("WM-WM-WM-WM-WM-WM--");
+}
 
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
   digitalWrite(pinPrzekaznika, true);
@@ -114,11 +161,13 @@ void wyswietl() {
       lcd.print("Boj OFF tem.");
     }
     lcd.print(sredniaTempDoWyswietlenia);
+    
     Serial.print(godziny);
     Serial.print(":");
     Serial.print(minuty);
     Serial.print(":");
     Serial.println(sekundy);
+  
     kroczkiPoWyswietleniu = kroczkiBierzace;
   }
 }
@@ -129,7 +178,10 @@ void odczytajTemperature() {
     Serial.print("temperatura:");
     Serial.println(temperatura);
     Serial.println(analogRead(Czujnik_LM35));
-    wyciagnijSredniaTemperature(temperatura);
+    if (temperatura > (sredniaTempDoWyswietlenia - (sredniaTempDoWyswietlenia * 0.1))
+        && temperatura < (sredniaTempDoWyswietlenia + (sredniaTempDoWyswietlenia * 0.1))) {
+      wyciagnijSredniaTemperature(temperatura);
+    }
     kroczkiPoOdczycie = kroczkiBierzace;
   }
 }
