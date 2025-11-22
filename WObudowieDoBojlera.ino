@@ -5,7 +5,7 @@
 Ds1302 rtc(9, 7, 8);  //RST CLK DAT
 
 float temperatura = 60;
-float sredniaTempDoWyswietlenia = 45;
+float sredniaTempDoWyswietlenia = 10;
 int godziny = 12;  // ta zmienna bedzie przechowywac godzine
 int minuty = 10;
 int sekundy = 15;
@@ -26,10 +26,10 @@ unsigned long kroczkiBierzace = millis();
 unsigned long kroczkiPoSpr = 1;
 unsigned long kroczkiPoOdczycie = 1;
 unsigned long kroczkiPoWyswietleniu = 1;
-unsigned long przerwaSpr = 5000;
-unsigned long przerwaPoOdczycie = 5000;
+unsigned long przerwaSpr = 20000;
+unsigned long przerwaPoOdczycie = 20000;
 unsigned long przerwaWyswietleniu = 200;
-
+unsigned long kroczkiKlawiszy = 1;
 char pinBojler = 6;      //D6
 char pinWentylator = 5;  //D5
 
@@ -40,6 +40,7 @@ char pinPrzyciskWlaczPlus = 13;    //D13 czarny
 char pinPrzyciskWylaczMinus = 12;  //D12 biały/biały
 
 
+boolean stanOdczytany, stanPoprzedni, stanBierzacy, priorytetUruhom;
 
 
 
@@ -105,28 +106,89 @@ void loop() {
 }
 
 void ustawGodzine() {
-  boolean stanOdczytany;
-  boolean stanPoprzedni, stanBierzacy;
-  stanOdczytany = digitalRead(pinPrzyciskSet);
-  boolean pluss = digitalRead(pinPrzyciskPlus);
-  boolean minuss;
-  minuss = digitalRead(pinPrzyciskMinus);
-  if (stanOdczytany){
-    Serial.println("SET.SET.SET.SET.SET");
-    delay(500);}
-  if (pluss){
-    Serial.println("PluS++++++++++++++");
-    delay(500);}
-  if (minuss){
-    Serial.println("MINUS--------------");
-    delay(500);}
+
+  if (kroczkiBierzace >= kroczkiKlawiszy) {
+
+    stanOdczytany = digitalRead(pinPrzyciskSet);
+    int plusGodzina;
+    plusGodzina = digitalRead(pinPrzyciskPlus);
+    int plusMinut;
+    plusMinut = digitalRead(pinPrzyciskMinus);
+    if (stanOdczytany) {
+
+      switch (stanPoprzedni) {
+        case false:
+          Serial.println("przestaw godzine");
+          stanPoprzedni = true;
+          stanBierzacy = true;
+          break;
+
+        case true:
+          Serial.println("Nie przestaiwaj nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
+          stanPoprzedni = false;
+          stanBierzacy = false;
+          break;
+
+        default:
+          Serial.println("Domyslnie");
+          break;
+      }
+    }
+    if (stanBierzacy > 0) {
+      Ds1302::DateTime now;
+      rtc.getDateTime(&now);
+
+      Serial.println("SET.SET.SET.SET.SET");
+
+
+      if (plusGodzina > 0) {
+        Serial.println("PluS+Godziny+++++++++++++");
+        Ds1302::DateTime dt = {
+          .year = now.year,
+          .month = now.month,
+          .day = now.day,
+          .hour = now.hour + 1,
+          .minute = now.minute,
+          .second = now.second,
+          .dow = now.dow
+        };
+        rtc.setDateTime(&dt);
+      }
+      if (plusMinut > 0) {
+        Serial.println("MINUTY+++++++PLUS");
+        Ds1302::DateTime dt = {
+          .year = now.year,
+          .month = now.month,
+          .day = now.day,
+          .hour = now.hour,
+          .minute = now.minute + 1,
+          .second = now.second,
+          .dow = now.dow
+        };
+        rtc.setDateTime(&dt);
+      }
+    }
+
+    kroczkiKlawiszy = kroczkiBierzace + 300;
+  }
 }
 
 void wlaczNatychmiast() {
-  if (digitalRead(pinPrzyciskWlaczPlus))
+  if (digitalRead(pinPrzyciskWlaczPlus)) {
     Serial.println("WWWWWWWWW++WW++WW++");
-  if (digitalRead(pinPrzyciskWylaczMinus))
+    priorytetUruhom = true;
+    uruchomPrzekaznikNr(pinBojler);
+    lcd.setCursor(0, 1);
+    lcd.print("Reczne ON");
+  }
+
+  if (digitalRead(pinPrzyciskWylaczMinus)) {
     Serial.println("WM-WM-WM-WM-WM-WM--");
+    priorytetUruhom = false;
+    wylaczPrzekaznikNr(pinBojler);
+    lcd.setCursor(0, 1);
+    lcd.print("Z reki OFF");
+  }
 }
 
 void uruchomPrzekaznikNr(char pinPrzekaznika) {
@@ -160,14 +222,18 @@ void wyswietl() {
     } else if (kontrolkaWlaczeniaBojlera == false) {
       lcd.print("Boj OFF tem.");
     }
-    lcd.print(sredniaTempDoWyswietlenia);
-    
+    if (stanBierzacy == true) {
+      lcd.print("ZMIANA");
+    } else {
+      lcd.print(sredniaTempDoWyswietlenia);
+    }
+
     Serial.print(godziny);
     Serial.print(":");
     Serial.print(minuty);
     Serial.print(":");
     Serial.println(sekundy);
-  
+
     kroczkiPoWyswietleniu = kroczkiBierzace;
   }
 }
@@ -187,6 +253,7 @@ void odczytajTemperature() {
 }
 
 void sprawdzTaryfe() {
+  if(priorytetUruhom==false){
   if (kroczkiBierzace - kroczkiPoSpr > przerwaSpr) {  // zamiast delay
     kontrolaGodzinDniDrugiejTRaryfy = false;          // zeruje kontrolke stanu bierzacej taryfy
     if (godziny >= 22 || godziny <= 5) {
@@ -220,6 +287,7 @@ void sprawdzTaryfe() {
 
     bezpiecznikTermiczny(sredniaTempDoWyswietlenia);
     kroczkiPoSpr = kroczkiBierzace;
+  }
   }
 }
 
